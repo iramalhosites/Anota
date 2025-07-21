@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tarefas - Glass Design com Banco de Dados</title>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Ubuntu Mono', monospace;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .title {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #FFD700;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        .db-status {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0, 255, 0, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            color: white;
+            font-family: 'Ubuntu Mono', monospace;
+            font-size: 1rem;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #FFD700;
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.02);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn-add {
+            flex: 1;
+            padding: 15px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: none;
+            border-radius: 15px;
+            color: #333;
+            font-family: 'Ubuntu Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+            background: linear-gradient(45deg, #FFA500, #FFD700);
+        }
+
+        .btn-add:active {
+            transform: translateY(0);
+        }
+
+        .btn-clear {
+            padding: 15px 25px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-family: 'Ubuntu Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+            background: linear-gradient(45deg, #ee5a52, #ff6b6b);
+        }
+
+        .items-container {
+            min-height: 200px;
+        }
+
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .items-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .items-count {
+            color: #FFD700;
+            font-size: 1rem;
+            background: rgba(255, 215, 0, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+            position: relative;
+        }
+
+        .item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .item-subject {
+            color: #FFD700;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            flex: 1;
+        }
+
+        .item-date {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            margin-left: 15px;
+        }
+
+        .item-description {
+            color: white;
+            font-size: 1rem;
+            line-height: 1.5;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+        }
+
+        .item-id {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.7rem;
+            position: absolute;
+            bottom: 5px;
+            left: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+            padding: 40px;
+        }
+
+        .delete-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            transform: scale(1.1);
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            color: white;
+            font-family: 'Ubuntu Mono', monospace;
+            font-size: 1rem;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #FFD700;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+                padding: 0 10px;
+            }
+            
+            .glass-card {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+
+            .btn-container {
+                flex-direction: column;
+            }
+
+            .items-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="glass-card">
+            <h1 class="title">Lista de Tarefas</h1>
+            <p class="subtitle">Organize suas atividades com estilo</p>
+            <div class="db-status" id="dbStatus">
+                🗄️ Banco de dados carregado - <span id="dbInfo">0 tarefas salvas</span>
+            </div>
+            
+            <form id="taskForm">
+                <div class="form-group">
+                    <label class="form-label" for="subject">Assunto:</label>
+                    <input 
+                        type="text" 
+                        id="subject" 
+                        class="form-input" 
+                        placeholder="Digite o assunto da tarefa..."
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="description">Descrição:</label>
+                    <textarea 
+                        id="description" 
+                        class="form-input form-textarea" 
+                        placeholder="Descreva os detalhes da tarefa..."
+                        required
+                    ></textarea>
+                </div>
+                
+                <div class="btn-container">
+                    <button type="submit" class="btn-add">
+                        ✨ Adicionar Tarefa
+                    </button>
+                    <button type="button" class="btn-clear" onclick="clearAllTasks()">
+                        🗑️ Limpar Tudo
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="glass-card items-container">
+            <div class="items-header">
+                <h2 class="items-title">📋 Suas Tarefas</h2>
+                <div class="items-count" id="itemsCount">0 tarefas</div>
+            </div>
+            
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="🔍 Pesquisar tarefas..."
+                    oninput="filterTasks()"
+                >
+            </div>
+            
+            <div id="itemsList">
+                <div class="empty-state">
+                    Nenhuma tarefa adicionada ainda.<br>
+                    Comece criando sua primeira tarefa acima! 🚀
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Classe para gerenciar o banco de dados local
+        class TaskDatabase {
+            constructor() {
+                this.dbName = 'taskListDB';
+                this.init();
+            }
+
+            init() {
+                // Verificar se o localStorage está disponível
+                if (typeof(Storage) !== "undefined") {
+                    this.loadTasks();
+                    this.updateDBStatus();
+                } else {
+                    console.error('LocalStorage não suportado neste navegador');
+                }
+            }
+
+            // Gerar ID único para cada tarefa
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+
+            // Salvar tarefas no localStorage
+            saveTasks(tasks) {
+                try {
+                    localStorage.setItem(this.dbName, JSON.stringify(tasks));
+                    this.updateDBStatus();
+                    return true;
+                } catch (error) {
+                    console.error('Erro ao salvar no banco de dados:', error);
+                    return false;
+                }
+            }
+
+            // Carregar tarefas do localStorage
+            loadTasks() {
+                try {
+                    const data = localStorage.getItem(this.dbName);
+                    return data ? JSON.parse(data) : [];
+                } catch (error) {
+                    console.error('Erro ao carregar do banco de dados:', error);
+                    return [];
+                }
+            }
+
+            // Adicionar nova tarefa
+            addTask(subject, description) {
+                const tasks = this.loadTasks();
+                const newTask = {
+                    id: this.generateId(),
+                    subject: subject,
+                    description: description,
+                    createdAt: new Date().toISOString(),
+                    timestamp: Date.now()
+                };
+                
+                tasks.unshift(newTask); // Adicionar no início da lista
+                
+                if (this.saveTasks(tasks)) {
+                    return newTask;
+                }
+                return null;
+            }
+
+            // Remover tarefa por ID
+            removeTask(taskId) {
+                const tasks = this.loadTasks();
+                const filteredTasks = tasks.filter(task => task.id !== taskId);
+                return this.saveTasks(filteredTasks);
+            }
+
+            // Limpar todas as tarefas
+            clearAllTasks() {
+                return this.saveTasks([]);
+            }
+
+            // Buscar tarefas por termo
+            searchTasks(searchTerm) {
+                const tasks = this.loadTasks();
+                if (!searchTerm) return tasks;
+                
+                const term = searchTerm.toLowerCase();
+                return tasks.filter(task => 
+                    task.subject.toLowerCase().includes(term) || 
+                    task.description.toLowerCase().includes(term)
+                );
+            }
+
+            // Atualizar status do banco de dados
+            updateDBStatus() {
+                const tasks = this.loadTasks();
+                const dbInfo = document.getElementById('dbInfo');
+                if (dbInfo) {
+                    dbInfo.textContent = `${tasks.length} tarefa${tasks.length !== 1 ? 's' : ''} salva${tasks.length !== 1 ? 's' : ''}`;
+                }
+            }
+
+            // Obter estatísticas
+            getStats() {
+                const tasks = this.loadTasks();
+                return {
+                    total: tasks.length,
+                    today: tasks.filter(task => {
+                        const today = new Date().toDateString();
+                        const taskDate = new Date(task.createdAt).toDateString();
+                        return today === taskDate;
+                    }).length
+                };
+            }
+        }
+
+        // Inicializar banco de dados
+        const db = new TaskDatabase();
+        let allTasks = [];
+        let filteredTasks = [];
+
+        // Carregar tarefas ao inicializar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAndDisplayTasks();
+        });
+
+        // Manipular envio do formulário
+        document.getElementById('taskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const subject = document.getElementById('subject').value.trim();
+            const description = document.getElementById('description').value.trim();
+            
+            if (subject && description) {
+                const newTask = db.addTask(subject, description);
+                if (newTask) {
+                    // Limpar formulário
+                    document.getElementById('subject').value = '';
+                    document.getElementById('description').value = '';
+                    
+                    // Recarregar e exibir tarefas
+                    loadAndDisplayTasks();
+                    
+                    // Adicionar efeito visual no botão
+                    const btn = document.querySelector('.btn-add');
+                    btn.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        btn.style.transform = '';
+                    }, 150);
+
+                    // Limpar busca se houver
+                    document.getElementById('searchInput').value = '';
+                } else {
+                    alert('Erro ao salvar a tarefa. Tente novamente.');
+                }
+            }
+        });
+
+        // Carregar e exibir todas as tarefas
+        function loadAndDisplayTasks() {
+            allTasks = db.loadTasks();
+            filteredTasks = allTasks;
+            displayTasks(filteredTasks);
+            updateTaskCount();
+        }
+
+        // Exibir tarefas na interface
+        function displayTasks(tasks) {
+            const itemsList = document.getElementById('itemsList');
+            
+            if (tasks.length === 0) {
+                itemsList.innerHTML = `
+                    <div class="empty-state">
+                        ${allTasks.length === 0 ? 
+                            'Nenhuma tarefa adicionada ainda.<br>Comece criando sua primeira tarefa acima! 🚀' :
+                            'Nenhuma tarefa encontrada com esse termo de busca. 🔍'
+                        }
+                    </div>
+                `;
+                return;
+            }
+            
+            itemsList.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+                itemDiv.innerHTML = `
+                    <div class="item-header">
+                        <div class="item-subject">${escapeHtml(task.subject)}</div>
+                        <div class="item-date">${formatDate(task.createdAt)}</div>
+                        <button class="delete-btn" onclick="deleteTask('${task.id}')" title="Remover tarefa">×</button>
+                    </div>
+                    <div class="item-description">${escapeHtml(task.description)}</div>
+                    <div class="item-id">ID: ${task.id}</div>
+                `;
+                
+                itemsList.appendChild(itemDiv);
+            });
+        }
+
+        // Filtrar tarefas por termo de busca
+        function filterTasks() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            filteredTasks = db.searchTasks(searchTerm);
+            displayTasks(filteredTasks);
+            updateTaskCount();
+        }
+
+        // Deletar tarefa
+        function deleteTask(taskId) {
+            if (confirm('Tem certeza que deseja remover esta tarefa?')) {
+                if (db.removeTask(taskId)) {
+                    loadAndDisplayTasks();
+                    
+                    // Limpar busca se a lista ficar vazia
+                    if (filteredTasks.length === 0) {
+                        document.getElementById('searchInput').value = '';
+                    }
+                } else {
+                    alert('Erro ao remover a tarefa. Tente novamente.');
+                }
+            }
+        }
+
+        // Limpar todas as tarefas
+        function clearAllTasks() {
+            if (allTasks.length === 0) {
+                alert('Não há tarefas para remover.');
+                return;
+            }
+            
+            if (confirm(`Tem certeza que deseja remover todas as ${allTasks.length} tarefas? Esta ação não pode ser desfeita.`)) {
+                if (db.clearAllTasks()) {
+                    loadAndDisplayTasks();
+                    document.getElementById('searchInput').value = '';
+                } else {
+                    alert('Erro ao limpar as tarefas. Tente novamente.');
+                }
+            }
+        }
+
+        // Atualizar contador de tarefas
+        function updateTaskCount() {
+            const count = filteredTasks.length;
+            const total = allTasks.length;
+            const countElement = document.getElementById('itemsCount');
+            
+            if (filteredTasks.length !== allTasks.length) {
+                countElement.textContent = `${count} de ${total} tarefas`;
+            } else {
+                countElement.textContent = `${count} tarefa${count !== 1 ? 's' : ''}`;
+            }
+        }
+
+        // Formatar data
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 1) {
+                return 'Hoje ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } else if (diffDays === 2) {
+                return 'Ontem ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
+        // Escapar HTML para prevenir XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Atalhos de teclado
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter para adicionar tarefa
+            if (e.key === 'Enter' && e.ctrlKey) {
+                document.getElementById('taskForm').dispatchEvent(new Event('submit'));
+            }
+            
+            // Ctrl+F para focar na busca
+            if (e.key === 'f' && e.ctrlKey) {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+            
+            // Escape para limpar busca
+            if (e.key === 'Escape') {
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput.value) {
+                    searchInput.value = '';
+                    filterTasks();
+                }
+            }
+        });
+
+        // Exibir estatísticas no console (para debug)
+        console.log('📊 Estatísticas da Lista de Tarefas:', db.getStats());
+    </script>
+</body>
+</html>
+
